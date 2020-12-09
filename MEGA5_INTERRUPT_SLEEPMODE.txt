@@ -1,0 +1,147 @@
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <UART_2560.h>
+#include <avr/sleep.h>
+
+void sleepEnable(void);
+void sleepDisable(void);
+void init_INTERRUPT();
+
+bool flagINT0 = 0, flagINT1 = 0, flagINT2 = 0, flagINT3 = 0,flagINT4 = 0;
+
+int main(void)
+{
+	UART_init_2560(9600);
+	DDRF|=(1<<PF0)|(1<<PF1)|(1<<PF2)|(1<<PF3)|(1<<PF4); /////for LED
+	
+	DDRD &=~((1<<PD0)|(1<<PD1)|(1<<PD2)|(1<<PD3));    //// for interrupts
+	DDRE &=~(0<<PE4);  ////last interrupt
+	sei();
+	init_INTERRUPT();	
+	sleepEnable();
+	
+	while(1)
+	{
+		
+		if (flagINT0)
+		{
+			PORTF |= (1 << PF0)	;	
+			__delay_ms(500);
+			flagINT0 =0;
+			UART_write_string(" Loop ..FLAG INT0 ....ISR   \n");
+			sleepDisable();
+			PORTF &=~(1<<PF0);
+			sleepEnable();
+		}
+		if (flagINT1)
+		{
+			PORTF |= (1 << PF1)	;
+			__delay_ms(500);
+			flagINT1=0;
+			UART_write_string(" Loop FLAG  INT1 ..ISR   \n");
+			sleepDisable();
+			PORTF &=~(1<<PF1);
+			sleepEnable();
+		}
+		if (flagINT2)
+			{
+				PORTF |= (1 << PF2)	;
+				__delay_ms(500);
+				flagINT2=0;
+				UART_write_string(" Loop FLAG  INT2 ..ISR   \n");
+				sleepDisable();
+				PORTF &=~(1<<PF2);
+				sleepEnable();
+			}
+		if (flagINT3)
+		{
+			PORTF |= (1 << PF3)	;
+			__delay_ms(500);
+			flagINT3=0;
+			UART_write_string(" Loop FLAG  INT3 ..ISR   \n");
+			sleepDisable();
+			PORTF &=~(1<<PF3);
+			sleepEnable();
+		}
+		if (flagINT4)
+		{
+			PORTF |= (1 << PF4)	;
+			__delay_ms(500);
+			flagINT4=0;
+			UART_write_string(" Loop FLAG  INT4 ..ISR   \n");
+			sleepDisable();
+			PORTF &=~(1<<PF4);
+			sleepEnable();
+		}
+	
+		
+	}
+	
+}
+
+ISR(INT0_vect)
+{	flagINT0= 1 ;
+	EIFR |= (1 << 0);
+}
+ISR(INT1_vect){
+	flagINT1=1;
+	EIFR |= (1 << 1);
+}
+ISR(INT2_vect)
+{	flagINT2= 1 ;
+	
+	EIFR |= (1 << 2);
+}
+ISR(INT3_vect){
+	flagINT3=1;
+	//UART_write_string("INT3_vect");
+	EIFR |= (1 << 3);
+}
+ISR(INT4_vect){
+	flagINT4=1;
+	UART_write_string("INT4_vect");
+	EIFR |= (1 << 4);
+}
+
+
+void init_INTERRUPT(){
+
+	EIMSK |= (1<<INT0);
+		EICRA |=(1<<ISC01)|(1<<ISC00);  ////// for INT0
+	
+		EIMSK |= (1<<INT1);
+		EICRA |=(1<<ISC11)|(1<<ISC10);   ////// for INT1
+			
+		EIMSK |= (1<<INT2);
+		EICRA |=(1<<ISC21)|(1<<ISC20);  ////// for INT2
+
+	EIMSK |= (1<<INT3);
+	EICRA |=(0<<ISC31)|(0<<ISC30);   ////// for INT3
+		
+		
+		EICRB |=(1<<ISC41)|(1<<ISC40);  ////// for INT4
+		EICRB = 3;
+	EIMSK |= (1<<INT4);
+}
+
+
+
+
+
+
+void sleepEnable(void){
+	UART_write_string("sleepEnable \n");
+	sleep_enable();
+	set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+	sleep_cpu();
+	__delay_ms(500);
+	UART_write_string("...reviving .... \n");
+
+}
+
+void sleepDisable(void){
+	UART_write_string("sleepDisable \n");
+	sleep_disable();
+}
